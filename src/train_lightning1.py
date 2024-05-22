@@ -163,7 +163,7 @@ def main():
         trainer = L.Trainer(
             callbacks=callbacks,
             accelerator="gpu",
-            devices=[2, 3],
+            devices=args.gpus,
             default_root_dir=args.model_prefix,
             logger=wandb_logger,
             # profiler=profiler,
