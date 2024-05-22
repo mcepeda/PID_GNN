@@ -31,6 +31,7 @@ def create_inputs_from_table(output, hits_only, prediction=False, hit_chis=False
 
     (
         pos_xyz_hits,
+        pos_pxpypz,
         p_hits,
         e_hits,
         hit_particle_link,
@@ -49,21 +50,23 @@ def create_inputs_from_table(output, hits_only, prediction=False, hit_chis=False
     ) = get_hit_features(
         output, number_hits, prediction, number_part, hit_chis=hit_chis
     )
-
+    # print("unique_list_particles", unique_list_particles)
     # features particles
     y_data_graph = get_particle_features(
         unique_list_particles, output, prediction, connection_list
     )
 
-    assert len(y_data_graph) == len(unique_list_particles)
+    # assert len(y_data_graph) == len(unique_list_particles)
 
     result = [
         y_data_graph,  # y_data_graph[~mask_particles],
         p_hits,
         e_hits,
+        daughters,
         cluster_id,
         hit_particle_link,
         pos_xyz_hits,
+        pos_pxpypz,
         pandora_cluster,
         pandora_cluster_energy,
         pfo_energy,
@@ -112,9 +115,11 @@ def create_graph(
         y_data_graph,
         p_hits,
         e_hits,
+        daughters,
         cluster_id,
         hit_particle_link,
         pos_xyz_hits,
+        pos_pxpypz,
         pandora_cluster,
         pandora_cluster_energy,
         pandora_pfo_energy,
@@ -144,12 +149,15 @@ def create_graph(
 
         g.ndata["h"] = hit_features_graph
         g.ndata["pos_hits_xyz"] = pos_xyz_hits
+        g.ndata["pos_pxpypz"] = pos_pxpypz
         g.ndata["label_true"] = 1.0 * labels_true.view(-1, 1)
-        g = calculate_distance_to_boundary(g)
+        # g = calculate_distance_to_boundary(g)
         g.ndata["hit_type"] = hit_type
+        g.ndata["daughters"] = daughters
+        g.ndata["e_hits"] = e_hits
         g.ndata[
-            "e_hits"
-        ] = e_hits  # if no tracks this is e and if there are tracks this fills the tracks e values with p
+            "p_hits"
+        ] = p_hits  # if no tracks this is e and if there are tracks this fills the tracks e values with p
         if hit_chis:
             g.ndata["chi_squared_tracks"] = chi_squared_tracks
         g.ndata["particle_number"] = cluster_id
@@ -160,8 +168,13 @@ def create_graph(
             g.ndata["pandora_pfo"] = pandora_pfo_link
             g.ndata["pandora_cluster_energy"] = pandora_cluster_energy
             g.ndata["pandora_pfo_energy"] = pandora_pfo_energy
-        y_data_graph.calculate_corrected_E(g, connections_list)
+        # y_data_graph.calculate_corrected_E(g, connections_list)
 
+    # if len(torch.unique(g.ndata["particle_number_nomap"])) > 1:
+    #     graph_empty = True
+    if len(pos_xyz_hits) < 10:
+        graph_empty = True
+    # print("graph_empty", graph_empty)
     return [g, y_data_graph], graph_empty
 
 

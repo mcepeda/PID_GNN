@@ -20,15 +20,14 @@ from src.logger.plotting_tools import PlotCoordinates
 from src.models.mlp_readout_layer import MLPReadout
 
 import lightning as L
-from src.utils.nn.tools import log_losses_wandb_tracking
 from torch.optim.lr_scheduler import ReduceLROnPlateau, StepLR
-
+from src.layers.inference_oc import create_and_store_graph_output
 from xformers.ops.fmha import BlockDiagonalMask
 import os
 import wandb
 
-from src.utils.nn.tools import log_losses_wandb
 import torch.nn.functional as F
+import pandas as pd
 
 
 class ExampleWrapper(L.LightningModule):
@@ -77,7 +76,7 @@ class ExampleWrapper(L.LightningModule):
             in_mv_channels=1,
             out_mv_channels=1,
             hidden_mv_channels=hidden_mv_channels,
-            in_s_channels=2,
+            in_s_channels=3,
             out_s_channels=1,
             hidden_s_channels=hidden_s_channels,
             num_blocks=blocks,
@@ -86,9 +85,12 @@ class ExampleWrapper(L.LightningModule):
         )
         self.ScaledGooeyBatchNorm2_1 = nn.BatchNorm1d(self.input_dim, momentum=0.1)
         number_of_classes = 2
-        self.clustering = nn.Linear(3, number_of_classes, bias=False)
-        self.loss_crit = nn.CrossEntropyLoss()
-        self.MLP_layer = MLPReadout(3, number_of_classes)
+        # self.clustering = nn.Linear(16, number_of_classes, bias=False)
+        # self.loss_crit = nn.CrossEntropyLoss()
+        self.loss_crit = nn.BCELoss()
+        self.m = nn.Sigmoid()
+        self.readout = "sum"
+        self.MLP_layer = MLPReadout(17 + 3, number_of_classes)
 
     def forward(self, g, step_count, eval="", return_train=False):
         """Forward pass.
@@ -105,44 +107,48 @@ class ExampleWrapper(L.LightningModule):
         """
 
         inputs = g.ndata["pos_hits_xyz"]
-        if self.trainer.is_global_zero and step_count % 500 == 0:
-            g.ndata["original_coords"] = g.ndata["pos_hits_xyz"]
-            PlotCoordinates(
-                g,
-                path="input_coords",
-                outdir=self.args.model_prefix,
-                # features_type="ones",
-                predict=self.args.predict,
-                epoch=str(self.current_epoch) + eval,
-                step_count=step_count,
-            )
+        # if self.trainer.is_global_zero and step_count % 500 == 0:
+        #     g.ndata["original_coords"] = g.ndata["pos_hits_xyz"]
+        #     PlotCoordinates(
+        #         g,
+        #         path="input_coords",
+        #         outdir=self.args.model_prefix,
+        #         # features_type="ones",
+        #         predict=self.args.predict,
+        #         epoch=str(self.current_epoch) + eval,
+        #         step_count=step_count,
+        #     )
         inputs_scalar = g.ndata["hit_type"].view(-1, 1)
         inputs = self.ScaledGooeyBatchNorm2_1(inputs)
         # inputs = inputs.unsqueeze(0)
-        embedded_inputs = embed_point(inputs) + embed_scalar(inputs_scalar)
+        embedded_inputs = embed_point(inputs)  # + embed_scalar(inputs_scalar)
         embedded_inputs = embedded_inputs.unsqueeze(
             -2
         )  # (batch_size*num_points, 1, 16)
         mask = self.build_attention_mask(g)
         scalars = torch.zeros((inputs.shape[0], 1))
-        scalars = g.ndata["h"][:, -2:]  # this corresponds to e,p
+        scalars = torch.cat(
+            (g.ndata["h"][:, -2:], inputs_scalar), dim=1
+        )  # this corresponds to e,p
         # Pass data through GATr
-        forward_time_start = time()
         embedded_outputs, scalar_outputs = self.gatr(
             embedded_inputs, scalars=scalars, attention_mask=mask
         )  # (..., num_points, 1, 16)
-        forward_time_end = time()
-        wandb.log({"time_gatr_pass": forward_time_end - forward_time_start})
-        points = extract_point(embedded_outputs[:, 0, :])
+        # wandb.log({"time_gatr_pass": forward_time_end - forward_time_start})
+        # points = extract_point(embedded_outputs[:, 0, :])
 
-        # Extract scalar and aggregate outputs from point cloud
-        nodewise_outputs = extract_scalar(embedded_outputs)  # (..., num_points, 1, 1)
-        x_point = points
-        x_scalar = torch.cat(
-            (nodewise_outputs.view(-1, 1), scalar_outputs.view(-1, 1)), dim=1
+        # # Extract scalar and aggregate outputs from point cloud
+        # nodewise_outputs = extract_scalar(embedded_outputs)  # (..., num_points, 1, 1)
+        # x_point = points
+        # x_scalar = torch.cat(
+        #     (nodewise_outputs.view(-1, 1), scalar_outputs.view(-1, 1)), dim=1
+        # )
+        # output = torch.cat(
+        #     (embedded_outputs[:, 0, :], scalar_outputs.view(-1, 1)), dim=1
+        # )
+        g.ndata["h"] = torch.cat(
+            (embedded_outputs[:, 0, :], scalar_outputs.view(-1, 1)), dim=1
         )
-        x = self.clustering(x_point)
-        g.ndata["h"] = x
 
         if self.readout == "sum":
             hg = dgl.sum_nodes(g, "h")
@@ -153,8 +159,22 @@ class ExampleWrapper(L.LightningModule):
         else:
             hg = dgl.mean_nodes(g, "h")  # default readout is mean nodes
 
-        return self.MLP_layer(hg)
-        return x
+        ## head 2
+        g.ndata["hit_type1"] = 1.0 * (g.ndata["hit_type"] == 1)
+        g.ndata["hit_type2"] = 1.0 * (g.ndata["hit_type"] == 2)
+        g.ndata["hit_type3"] = 1.0 * (g.ndata["hit_type"] == 3)
+        feature_high_level = torch.cat(
+            (
+                dgl.sum_nodes(g, "hit_type1").view(-1, 1),
+                dgl.mean_nodes(g, "hit_type2").view(-1, 1),
+                dgl.mean_nodes(g, "hit_type3").view(-1, 1),
+            ),
+            dim=1,
+        )
+        all_features = torch.cat((feature_high_level, hg.view(-1, 17)), dim=1)
+
+        all_features = self.MLP_layer(all_features)
+        return all_features
 
     def build_attention_mask(self, g):
         """Construct attention mask from pytorch geometric batch.
@@ -186,8 +206,13 @@ class ExampleWrapper(L.LightningModule):
         loss_time_start = time()
 
         # Dummy loss to avoid errors
-        labels_true = dgl.readout_nodes(batch_g, "label_true", op="max").Long()
-        loss = self.loss_crit(model_output, labels_true)
+        labels_true = dgl.readout_nodes(batch_g, "label_true", op="max")
+
+        labels_true[labels_true == 4] = 1
+        loss = self.loss_crit(
+            self.m(model_output),
+            1.0 * F.one_hot(labels_true.view(-1).long(), num_classes=2),
+        )
         loss_time_end = time()
         if self.trainer.is_global_zero:
             wandb.log(
@@ -197,6 +222,10 @@ class ExampleWrapper(L.LightningModule):
         misc_time_start = time()
         if self.trainer.is_global_zero:
             wandb.log({"loss": loss.item()})
+            acc = torch.mean(
+                1.0 * (model_output.argmax(axis=1) == labels_true.view(-1))
+            )
+            wandb.log({"accuracy": acc.item()})
         self.loss_final = loss.item() + self.loss_final
         self.number_b = self.number_b + 1
         del model_output
@@ -222,17 +251,62 @@ class ExampleWrapper(L.LightningModule):
         shap_vals, ec_x = None, None
 
         model_output = self(batch_g, 1)
-        labels_true = dgl.readout_nodes(batch_g, "label_true", op="max").Long()
-        loss = self.loss_crit(model_output, labels_true)
+        labels_true = dgl.readout_nodes(batch_g, "label_true", op="max")
+        labels_true[labels_true == 4] = 1
+        # create_and_store_graph_output(
+        #     labels_true,
+        #     batch_g,
+        #     model_output,
+        #     y,
+        #     batch_idx,
+        #     path_save=self.args.model_prefix,
+        # )
+        loss = self.loss_crit(
+            self.m(model_output),
+            1.0 * F.one_hot(labels_true.view(-1).long(), num_classes=2),
+        )
+        # m = nn.Softmax(dim=1)
+        model_output1 = self.m(model_output)
+        if self.args.predict:
+            d = {
+                "pion0": model_output1.detach().cpu()[:, 0].view(-1),
+                "pion": model_output1.detach().cpu()[:, 1].view(-1),
+                "e": model_output1.detach().cpu()[:, 2].view(-1),
+                "muon": model_output1.detach().cpu()[:, 3].view(-1),
+                "rho": model_output1.detach().cpu()[:, 4].view(-1),
+                "labels_true": labels_true.detach().cpu().view(-1),
+                "energy": y.E.detach().cpu().view(-1),
+            }
+        if self.args.predict:
+            d = {
+                "pion": model_output1.detach().cpu()[:, 0].view(-1),
+                "rho": model_output1.detach().cpu()[:, 1].view(-1),
+                "labels_true": labels_true.detach().cpu().view(-1),
+                "energy": y.E.detach().cpu().view(-1),
+            }
+            df = pd.DataFrame(data=d)
+            self.eval_df.append(df)
+
+        if self.trainer.is_global_zero:
+            wandb.log({"loss_val": loss.item()})
+            acc = torch.mean(
+                1.0 * (model_output.argmax(axis=1) == labels_true.view(-1))
+            )
+            wandb.log({"accuracy val ": acc.item()})
 
         if self.trainer.is_global_zero:
             wandb.log(
                 {
                     "conf_mat": wandb.plot.confusion_matrix(
                         probs=None,
-                        y_true=labels_true.detach().cpu().numpy(),
-                        preds=model_output.argmax(axis=1).detach().cpu().numpy(),
-                        class_names=["pi0", "pi", "e+", "mu", "rho"],
+                        y_true=labels_true.view(-1).detach().cpu().numpy(),
+                        preds=model_output.argmax(axis=1)
+                        .view(-1)
+                        .detach()
+                        .cpu()
+                        .numpy(),
+                        # class_names=["pi0", "pi", "e+", "mu", "rho"],
+                        class_names=["pi", "rho"],
                     )
                 }
             )
@@ -251,9 +325,17 @@ class ExampleWrapper(L.LightningModule):
 
     def on_validation_epoch_start(self):
         self.make_mom_zero()
-        self.df_showers = []
-        self.df_showers_pandora = []
-        self.df_showes_db = []
+        self.eval_df = []
+
+    def on_validation_epoch_end(self):
+        if self.args.predict:
+            df_batch1 = pd.concat(self.eval_df)
+            df_batch1.to_pickle(self.args.model_prefix + "/model_output_eval.pt")
+
+    # def on_after_backward(self):
+    #     for name, p in self.named_parameters():
+    #         if p.grad is None:
+    #             print(name)
 
     def make_mom_zero(self):
         if self.current_epoch > 1 or self.args.predict:

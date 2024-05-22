@@ -117,10 +117,12 @@ def find_mask_no_energy(
         mask_particles = np.full((len(list_p)), False, dtype=bool)
     return mask, mask_particles
 
+
 class CachedIndexList:
     def __init__(self, lst):
         self.lst = lst
         self.cache = {}
+
     def index(self, value):
         if value in self.cache:
             return self.cache[value]
@@ -129,6 +131,7 @@ class CachedIndexList:
             self.cache[value] = idx
             return idx
 
+
 def find_cluster_id(hit_particle_link):
     unique_list_particles = list(np.unique(hit_particle_link))
     if np.sum(np.array(unique_list_particles) == -1) > 0:
@@ -136,15 +139,20 @@ def find_cluster_id(hit_particle_link):
         noise_idx = torch.where(unique_list_particles == -1)[0]
         non_noise_particles = unique_list_particles[non_noise_idx]
         c_non_noise_particles = CachedIndexList(non_noise_particles)
-        cluster_id = map(lambda x: c_non_noise_particles.index(x), hit_particle_link.tolist())
+        cluster_id = map(
+            lambda x: c_non_noise_particles.index(x), hit_particle_link.tolist()
+        )
         cluster_id = torch.Tensor(list(cluster_id)) + 1
         unique_list_particles[non_noise_idx] = cluster_id
         unique_list_particles[noise_idx] = 0
     else:
         c_unique_list_particles = CachedIndexList(unique_list_particles)
-        cluster_id = map(lambda x: c_unique_list_particles.index(x), hit_particle_link.tolist())
+        cluster_id = map(
+            lambda x: c_unique_list_particles.index(x), hit_particle_link.tolist()
+        )
         cluster_id = torch.Tensor(list(cluster_id)) + 1
     return cluster_id, unique_list_particles
+
 
 def scatter_count(input: torch.Tensor):
     return scatter_add(torch.ones_like(input, dtype=torch.long), input.long())
@@ -156,14 +164,19 @@ def get_particle_features(unique_list_particles, output, prediction, connection_
         number_particle_features = 12 - 2
     else:
         number_particle_features = 9 - 2
-    features_particles = torch.permute(
-        torch.tensor(
-            output["pf_features"][
-                2:number_particle_features, list(unique_list_particles)
-            ]
-        ),
-        (1, 0),
-    )  #
+    # unique_list_particles = torch.Tensor(unique_list_particles)
+    # features_particles = torch.permute(
+    #     torch.tensor(
+    #         output["pf_features"][2:number_particle_features, unique_list_particles]
+    #     ),
+    #     (1, 0),
+    # ).view(-1, 5)
+
+    features_particles = torch.tensor(
+        output["pf_features"][2:number_particle_features, 2]
+    ).view(-1, 5)
+
+    # print("features_particles", features_particles.shape)
     particle_coord = spherical_to_cartesian(
         features_particles[:, 0],
         features_particles[:, 1],
@@ -217,6 +230,7 @@ def modify_index_link_for_gamma_e(
     for p, i in enumerate(a_u):
         mask2 = a == i
         list_of_daugthers = torch.unique(b[mask2])
+        # print(p, i, list_of_daugthers)
         number_of_p[p] = len(list_of_daugthers)
         if (number_of_p[p] > 1) and (torch.sum(list_of_daugthers == i) > 0):
             connections_list.append([i, torch.unique(b[mask2])])
@@ -243,6 +257,7 @@ def get_hit_features(output, number_hits, prediction, number_part, hit_chis):
     else:
         indx_daugthers = 1
     daughters = torch.tensor(output["pf_vectoronly"][indx_daugthers, 0:number_hits])
+    # print("daughters", torch.unique(daughters))
     if prediction:
         pandora_cluster = torch.tensor(output["pf_vectoronly"][1, 0:number_hits])
         pandora_pfo_link = torch.tensor(output["pf_vectoronly"][2, 0:number_hits])
@@ -272,19 +287,23 @@ def get_hit_features(output, number_hits, prediction, number_part, hit_chis):
         torch.tensor(output["pf_vectors"][:, 0:number_hits]), (1, 0)
     )[:, 2].to(torch.int64)
 
-    (
-        hit_particle_link,
-        hit_link_modified,
-        connection_list,
-    ) = modify_index_link_for_gamma_e(
-        hit_type_feature, hit_particle_link, daughters, output, number_part
-    )
-
+    # (aa, aaa, aaaa,) = modify_index_link_for_gamma_e(
+    #     hit_type_feature, hit_particle_link, daughters, output, number_part
+    # )
+    hit_link_modified = torch.ones_like(hit_particle_link)
+    connection_list = None
     cluster_id, unique_list_particles = find_cluster_id(hit_particle_link)
-
+    unique_list_particles_ = torch.unique(daughters)
+    unique_list_particles = []
+    for i in range(0, len(unique_list_particles_)):
+        if unique_list_particles_[i] != -1:
+            unique_list_particles.append(int(unique_list_particles_[i].item()))
     # position, e, p
     pos_xyz_hits = torch.permute(
-        torch.tensor(output["pf_points"][:, 0:number_hits]), (1, 0)
+        torch.tensor(output["pf_points"][:3, 0:number_hits]), (1, 0)
+    )
+    pos_pxpypz = torch.permute(
+        torch.tensor(output["pf_points"][3:, 0:number_hits]), (1, 0)
     )
     pf_features_hits = torch.permute(
         torch.tensor(output["pf_features"][0:2, 0:number_hits]), (1, 0)
@@ -296,6 +315,7 @@ def get_hit_features(output, number_hits, prediction, number_part, hit_chis):
 
     return (
         pos_xyz_hits,
+        pos_pxpypz,
         p_hits,
         e_hits,
         hit_particle_link,
@@ -310,7 +330,7 @@ def get_hit_features(output, number_hits, prediction, number_part, hit_chis):
         hit_link_modified,
         connection_list,
         chi_squared_tracks,
-        label_true
+        label_true,
     )
 
 
@@ -467,7 +487,7 @@ def concatenate_Particles_GT(list_of_Particles_GT):
         list_dec_calo,
         list_dec_track,
         batch_number,
-        energy_corrected=list_E_corr
+        energy_corrected=list_E_corr,
     )
 
 

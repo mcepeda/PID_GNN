@@ -29,6 +29,7 @@ def to_filelist(args, mode="train"):
     for name, files in file_dict.items():
         file_dict[name] = sorted(files)
 
+    # args.local_rank = None
     if args.local_rank is not None:
         if mode == "train":
             local_world_size = int(os.environ["LOCAL_WORLD_SIZE"])
@@ -67,4 +68,5 @@ def to_filelist(args, mode="train"):
 
     filelist = sum(file_dict.values(), [])
     assert len(filelist) == len(set(filelist))
+    print("file dict has leen ", len(filelist))
     return file_dict, filelist

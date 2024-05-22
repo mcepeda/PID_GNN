@@ -204,8 +204,6 @@ class _SimpleIter(object):
             if len(self.filelist) == 0:
                 raise StopIteration
             try:
-                print("self.indices", self.indices)
-                print("self.cursor", self.cursor)
                 i = self.indices[self.cursor]
             except IndexError:
                 # case 1: first entry, `self.indices` is still empty

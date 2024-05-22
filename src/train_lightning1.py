@@ -149,7 +149,7 @@ def main():
             dirpath=args.model_prefix,  # checkpoints_path, # <--- specify this on the trainer itself for version control
             filename="_{epoch}_{step}",
             # every_n_epochs=val_every_n_epochs,
-            every_n_train_steps=1000,
+            every_n_train_steps=200,
             save_top_k=-1,  # <--- this is important!
             save_weights_only=True,
         )
@@ -159,21 +159,20 @@ def main():
             checkpoint_callback,
             lr_monitor,
         ]
-        if args.freeze_clustering:
-            callbacks.append(FreezeClustering())
-        #profiler = AdvancedProfiler(dirpath=".", filename="perf_logs_train_23042024_2")
+
         trainer = L.Trainer(
             callbacks=callbacks,
             accelerator="gpu",
-            devices=gpus,
+            devices=[2, 3],
             default_root_dir=args.model_prefix,
             logger=wandb_logger,
-            #profiler=profiler,
+            # profiler=profiler,
             max_epochs=args.num_epochs,
             # accumulate_grad_batches=1,
             strategy="ddp",
             # limit_train_batches=100,
             limit_val_batches=100,
+            # strategy="ddp_find_unused_parameters_true"
             # precision=16
             # resume_from_checkpoint=args.load_model_weig
             # hts,
@@ -194,34 +193,28 @@ def main():
     if args.data_test:
         if args.load_model_weights is not None and args.correction:
             from src.models.GATr.Gatr_pf_e import ExampleWrapper as GravnetModel
+
             model = GravnetModel.load_from_checkpoint(
                 args.load_model_weights, args=args, dev=0
             )
-        #profiler = AdvancedProfiler(dirpath=".", filename="perf_logs_eval_23042024")
+        # profiler = AdvancedProfiler(dirpath=".", filename="perf_logs_eval_23042024")
         trainer = L.Trainer(
             callbacks=[TQDMProgressBar(refresh_rate=1)],
             accelerator="gpu",
-            #profiler=profiler,
-            devices=gpus,
+            # profiler=profiler,
+            devices=[1],
             default_root_dir=args.model_prefix,
             logger=wandb_logger,
-            # limit_val_batches=19,
+            # limit_val_batches=2,
         )
-        if args.correction:
-            for name, get_test_loader in test_loaders.items():
-                test_loader = get_test_loader()
-                trainer.validate(
-                    model=model,
-                    dataloaders=test_loader,
-                )
-        else:
-            for name, get_test_loader in test_loaders.items():
-                test_loader = get_test_loader()
-                trainer.validate(
-                    model=model,
-                    ckpt_path=args.load_model_weights,
-                    dataloaders=test_loader,
-                )
+
+        for name, get_test_loader in test_loaders.items():
+            test_loader = get_test_loader()
+            trainer.validate(
+                model=model,
+                ckpt_path=args.load_model_weights,
+                dataloaders=test_loader,
+            )
 
 
 if __name__ == "__main__":
