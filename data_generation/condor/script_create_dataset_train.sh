@@ -5,12 +5,13 @@
 
 # python submit_jobs_train.py --config config_pion0.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/pion0_0/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/pion0/ --idx 1 --njobs 1000 --nev 100 --queue workday
 
-python submit_jobs_train.py --config config_pion.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/pion_1/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/pion_1/ --idx 0 --njobs 4000 --nev 100 --queue workday
+# python submit_jobs_train.py --config config_pion.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/pion_v2/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/pion_v2/ --idx 0 --njobs 4000 --nev 100 --queue workday
 
 # python submit_jobs_train.py --config config_electron.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/electron_0/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/electron/ --idx 2 --njobs 1000 --nev 100 --queue workday
 
 # python submit_jobs_train.py --config config_muon.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/muon_0/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/muon/ --idx 3 --njobs 4000 --nev 100 --queue workday
 
-python submit_jobs_train.py --config config_resonance.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/rho_1/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/rho_1/ --idx 4 --njobs 4000 --nev 100 --queue workday
+# python submit_jobs_train.py --config config_resonance.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/rho_v2/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/rho_v2/ --idx 4 --njobs 4000 --nev 100 --queue workday
 
+python submit_jobs_train.py --config config_tau.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/single_particles_flat/tau/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/single_particles_flat/tau/ --idx 5 --njobs 4000 --nev 100 --queue workday
 
