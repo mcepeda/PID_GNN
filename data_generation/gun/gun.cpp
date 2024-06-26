@@ -16,69 +16,75 @@
 #include <string> 
 
 using namespace HepMC3;
-// #include "G4Version.hh"
-// Add these includes at the top of your file
 #include <random>
 #include <cmath>
-// #include "G4Event.hh"
-// #include "G4ParticleTable.hh"
-// #include "G4ParticleDefinition.hh"
-// #include "G4PhysicalConstants.hh"
-// #include "G4Version.hh"
-// #include "G4SystemOfUnits.hh"
-// #include "G4NucleiProperties.hh"
-// #include <G4VUserPhysicsList.hh>
 
-// class G4VUserPhysicsList;
+#include "G4Electron.hh"
+#include "QBBC.hh"
+#include "G4ParticleTable.hh"
+#include "G4ParticleDefinition.hh"
+
+double get_mass_G4(int pid) {
+    // Based on Example showing how to retrieve Geant4 particle properties
+    // Alvaro Tolosa-Delgado, May 2024, CERN
+    std::map<int, std::string> myMap;
+    myMap[211] = "pi+";
+    myMap[-211] = "pi-";
+    myMap[2212] = "proton";
+    myMap[-2212] = "proton";
+    myMap[2112] = "neutron";
+    myMap[111] = "pi0";
+    myMap[130] = "kaon0L";
+    myMap[-15]= "tau-";
+    myMap[15]= "tau+";
+    myMap[-13]= "mu-";
+    myMap[13]= "mu+";
+    myMap[22]= "gamma";
+    myMap[-11]= "e-";
+    myMap[11]= "e+";
+    myMap[213]= "rho+";
+    myMap[-213]= "rho-";
+    std::string  particle_name = myMap[pid];
+    // Initialize a builtin physics list, any would work in this case
+    G4VModularPhysicsList* physicsList = new QBBC; // from QBBC.hh
+    // Initialize the definition of all the particles known to Geant4
+    physicsList->ConstructParticle();
+    
+    // now the Particle table is ready to be used
+    G4ParticleDefinition* particle = G4ParticleTable::GetParticleTable()->FindParticle(particle_name);
+    G4double particle_mass = particle->GetPDGMass();
+    particle_mass = particle_mass / 1e3;
+    std::cout << "particle_mass: " << particle_mass << std::endl;
+    return particle_mass;
+}
+
+
+
 
 // double get_mass(int pid) {
-//     std::map<int, std::string> myMap;
-//     myMap[211] = "pi+";
-//     myMap[-211] = "pi-";
-//     myMap[2212] = "neutron";
-//     myMap[2112] = "proton";
-//     myMap[111] = "pi0";
-//     myMap[130] = "kaon0L";
-//     G4double particle_mass1 = -1.;
-//     std::string  particle_name = myMap[pid];
-//     std::cout<<"particle_name: "<< particle_name <<"\n";
-//     double particle_mass = 0.0;
+//     // PDG mass values
+//     std::map<int, double> masses = {
+//         {211, 0.139570},   // charged pion
+//         {-211, 0.139570},   // charged pion
+//         {2212, 0.93827},  // proton
+//         {-2212, 0.93827},  // proton
+//         {2112, 0.93957},  // neutron
+//         {111, 0.13498},   // pi0
+//         {130, 0.49767},    // Klong
+//         {11, 0.00051}, 
+//         {-11, 0.00051}, 
+//         {22, 0.00000},
+//         // {13, 0.10566},
+//         // {-13, 0.10566},
+//         // {213, 0.76690}, //rho(770)^+ 
+//         // {-213,0.76690 }, //rho(770)^-
+//         {15, 1.77700}, //tau^-
+//         {-15, 1.77700}, //tau^+
 
-//     G4ParticleTable*      table = G4ParticleTable::GetParticleTable();
-//     G4ParticleDefinition* particle = table->FindParticle("opticalphoton");
-//     if (0 == particle) {
-//         std::cout<<"got particle: "<< particle <<"\n";
-//     }
-    
-    
-//     // std::cout<<"got particle: "<< particle <<"\n";
-//     // particle_mass1 = particle->GetPDGMass();
-//     // std::cout<<"particle_mass: "<< particle_mass1 <<"\n";
-//     return particle_mass;
+//     };
+//     // Return the mass if found, 0 otherwise
+//     return masses.count(pid) ? masses[pid] : 0;
 // }
-// https://github.com/AIDASoft/DD4hep/blob/58fa8c0b16458b645a3edfd8469fddd87d8d8689/DDG4/examples/particle.tbl#L92
-double get_mass(int pid) {
-    // PDG mass values
-    std::map<int, double> masses = {
-        {211, 0.139570},   // charged pion
-        {-211, 0.139570},   // charged pion
-        {2212, 0.93827},  // proton
-        {-2212, 0.93827},  // proton
-        {2112, 0.93957},  // neutron
-        {111, 0.13498},   // pi0
-        {130, 0.49767},    // Klong
-        {11, 0.00051}, 
-        {-11, 0.00051}, 
-        {22, 0.00000},
-        {13, 0.10566},
-        {-13, 0.10566},
-        {213, 0.76690}, //rho(770)^+ 
-        {-213,0.76690 } //rho(770)^-
-
-    };
-    // Return the mass if found, 0 otherwise
-    return masses.count(pid) ? masses[pid] : 0;
-}
 
 
 void generate_event(WriterAscii& writer, const std::vector<int>& pid_list, 
@@ -136,7 +142,7 @@ void generate_event(WriterAscii& writer, const std::vector<int>& pid_list,
 
         // Get the particle mass
         // std::cout<<"pid: "<< pid <<"\n";
-        double mass = get_mass(pid);
+        double mass = get_mass_G4(pid);
         // std::cout<<"mass: "<<mass <<"\n";
         // Convert eta to theta
         float theta = 2.0 * atan(exp(-etap));
