@@ -53,7 +53,6 @@ event_number, n_hit, n_part, dic, t = initialize(t)
 
 event_number[0] = 0
 for i, event in enumerate(reader.get("events")):
-
     number_of_hist_with_no_genlinks = 0
     (
         genpart_indexes_pre,
@@ -67,21 +66,25 @@ for i, event in enumerate(reader.get("events")):
     # clear all the vectors
     # either go twice through the event or store two different events for each...
     # for j_tau in range(0, 2):
-    index_taus = [index_Z + 1, index_Z + 2]
+    print(index_Z, decay_type1, decay_type2)
+    index_taus = index_Z
     decay_types = [decay_type1, decay_type2]
 
     dic = clear_dic(dic)
     n_part[0] = 0
 
-    print("")
-    print(" ----- new event: {},{} ----------".format(event_number[0], index_Z))
-    print("")
-
     dic, genpart_indexes = store_gen_particles(
-        n_part_pre, gen_part_coll, indexes_genpart_pre, dic, n_part, debug, index_taus
+        n_part_pre,
+        gen_part_coll,
+        indexes_genpart_pre,
+        dic,
+        n_part,
+        debug,
+        index_taus,
     )
 
     n_hit[0] = 0
+
     n_hit, dic, number_of_hist_with_no_genlinks = store_tracks(
         event,
         debug,

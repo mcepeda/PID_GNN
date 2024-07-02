@@ -28,15 +28,15 @@ def get_decay_type(daughters, gen_part_coll):
     for daugther in daughters:
 
         pdgs.append(gen_part_coll[daugther].getPDG())
-
+    # print("PDGS", pdgs)
     decays = [
         [11, 12, 16],
         [13, 14, 16],
         [16, 111, 211],
-        [16, 211, 22],
+        [16, 211],
         [16, 111, 111, 211],
     ]
-    decay_check = [set(daughters) == set(decay) for decay in decays]
+    decay_check = [set(np.abs(pdgs)) == set(decay) for decay in decays]
     if np.sum(decay_check) == 0:
         # none of the decays considered match
         return 10
@@ -205,12 +205,17 @@ def find_mother_particle(j, gen_part_coll, index_tau):
     belongs_to_tau = False
     while len(np.reshape(np.array(parent_p), -1)) < 1.5:
         if type(parent_p) == list:
-            parent_p = parent_p[0]
+            if len(parent_p) > 0:
+                parent_p = parent_p[0]
+            else:
+                break
         parent_p_r = get_genparticle_parents(
             parent_p,
             gen_part_coll,
         )
-        print("parent_pr", parent_p_r, index_tau)
+        if len(parent_p_r) == 0:
+            break
+        # print("parent_pr", parent_p_r, index_tau)
         if parent_p_r[0] == index_tau:
             belongs_to_tau = True
         pp_old = parent_p
@@ -245,7 +250,7 @@ def find_gen_link(
             gen_positions.append(l.getSim().getObjectID().index)
             weight = l.getWeight()
             gen_weights.append(weight)
-    print("gen_positions", gen_positions)
+    # print("gen_positions", gen_positions)
     # gen_positions[0] is the MC of the track, now find mother of the MC and check if it is tau_Z
     indices = []
     for i, pos in enumerate(gen_positions):
@@ -254,7 +259,7 @@ def find_gen_link(
                 genpart_indexes[pos], gen_part_coll, index_tau
             )
             indices.append(mother)
-    print("mother", mother)
+    # print("mother", mother)
     indices += [-1] * (5 - len(indices))
     gen_weights += [-1] * (5 - len(gen_weights))
     # print(gen_positions, indices)
@@ -267,7 +272,7 @@ def initialize(t):
     n_part = array("i", [0])
 
     hit_chis = ROOT.std.vector("float")()
-    label_true = ROOT.std.vector("int")()
+    label_true = ROOT.std.vector("float")()
     tau_label = ROOT.std.vector("int")()
     hit_x = ROOT.std.vector("float")()
     hit_y = ROOT.std.vector("float")()
@@ -456,8 +461,7 @@ def gen_particles_find(event, debug):
                         gen_part_coll,
                     )
                     decay_type1 = get_decay_type(daughters, gen_part_coll)
-
-               
+                    print("decay_type1", decay_type1)
             if j == index_of_tau2:
                 # find decay of tau 2
                 # find decay of tau 1
@@ -467,13 +471,14 @@ def gen_particles_find(event, debug):
                         gen_part_coll,
                     )
                     index_of_tau2 = daughters[0]
-                elif (np.abs(part.getPDG())== 15) and (part.getGeneratorStatus() == 2):
+                elif (np.abs(part.getPDG()) == 15) and (part.getGeneratorStatus() == 2):
                     ## status 2
                     daughters = get_genparticle_daughters(
                         j,
                         gen_part_coll,
                     )
                     decay_type2 = get_decay_type(daughters, gen_part_coll)
+                    print("decay_type2", decay_type2)
         if debug:
             print(
                 "all genparts: N: {}, PID: {}, Q: {}, P: {:.2e}, Theta: {:.2e}, Phi: {:.2e}, M: {:.2e}, X(m): {:.3f}, Y(m): {:.3f}, R(m): {:.3f}, Z(m): {:.3f}, status: {}, parents: {}, daughters: {}, decayed_traacker: {}".format(
@@ -511,7 +516,7 @@ def gen_particles_find(event, debug):
         indexes_genpart_pre,
         n_part_pre,
         gen_part_coll,
-        index_of_tau1 - 1,
+        [index_of_tau1, index_of_tau2],
         decay_type1,
         decay_type2,
     )
@@ -621,15 +626,20 @@ def store_tracks(
             gen_part_coll=gen_part_coll,
             index_tau=index_tau[1],
         )
-        print(gen_indices)
+        # print("BELONG TO", belongs_to_tau1, belongs_to_tau2)
         if belongs_to_tau1:
             index_tau_ = index_tau[0]
             decay_type = decay_types[0]
-            print("belong to tau 1")
-        if belongs_to_tau2:
+            # print("belong to tau 1")
+        elif belongs_to_tau2:
             index_tau_ = index_tau[1]
             decay_type = decay_types[1]
-            print("belong to tau 2")
+            # print("belong to tau 2")
+        else:
+            decay_type = -1
+            index_tau_ = -1
+            # print("does not belong to any")
+
         trackstate = track.getTrackStates()[0]
         referencePoint = trackstate.referencePoint
         x = referencePoint.x
@@ -890,14 +900,19 @@ def store_calo_hits(
                 index_tau=index_tau[1],
             )
 
+            # print("BELONG TO", belongs_to_tau1, belongs_to_tau2)
             if belongs_to_tau1:
                 index_tau_ = index_tau[0]
                 decay_type = decay_types[0]
-                print("calo hit belong to tau 1")
-            if belongs_to_tau2:
+                print("belong to tau 1")
+            elif belongs_to_tau2:
                 index_tau_ = index_tau[1]
                 decay_type = decay_types[1]
-                print("calo hit belong to tau 2")
+                print("belong to tau 2")
+            else:
+                decay_type = -1
+                index_tau_ = -1
+                print("does not belong to any")
 
             position = calohit.getPosition()
             x = position.x
