@@ -20,7 +20,7 @@ from tree_tools_tautau import (
 # Bz should be stored in the in the tree
 # should allow for multiple gen links to hit (probablyhas to be done in the previous edm4hep formation stage)
 
-debug = True
+debug = False
 """
 source /cvmfs/sw-nightlies.hsf.org/key4hep/setup.sh
 

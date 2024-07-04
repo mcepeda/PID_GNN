@@ -28,7 +28,7 @@ def get_decay_type(daughters, gen_part_coll):
     for daugther in daughters:
 
         pdgs.append(gen_part_coll[daugther].getPDG())
-    # print("PDGS", pdgs)
+    print("PDGS", pdgs)
     decays = [
         [11, 12, 16],
         [13, 14, 16],
@@ -36,7 +36,11 @@ def get_decay_type(daughters, gen_part_coll):
         [16, 211],
         [16, 111, 111, 211],
     ]
-    decay_check = [set(np.abs(pdgs)) == set(decay) for decay in decays]
+    decay_check = [
+        (set(np.abs(pdgs)) == set(decay)) * (len(pdgs) == len(decay))
+        for decay in decays
+    ]
+    print(decay_check)
     if np.sum(decay_check) == 0:
         # none of the decays considered match
         return 10
@@ -904,15 +908,15 @@ def store_calo_hits(
             if belongs_to_tau1:
                 index_tau_ = index_tau[0]
                 decay_type = decay_types[0]
-                print("belong to tau 1")
+                # print("belong to tau 1")
             elif belongs_to_tau2:
                 index_tau_ = index_tau[1]
                 decay_type = decay_types[1]
-                print("belong to tau 2")
+                # print("belong to tau 2")
             else:
                 decay_type = -1
                 index_tau_ = -1
-                print("does not belong to any")
+                # print("does not belong to any")
 
             position = calohit.getPosition()
             x = position.x
