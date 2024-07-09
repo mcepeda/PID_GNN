@@ -15,21 +15,21 @@ mkdir ${DIR}/${SEED}
 cd ${DIR}/${SEED}
 
 
-# if [[ "${SAMPLE}" == "gun" ]] 
-# then 
-# cp -r ${HOMEDIR}/gun/gun.cpp .
-# cp -r ${HOMEDIR}/gun/CMakeLists.txt . 
-# fi 
+if [[ "${SAMPLE}" == "gun" ]] 
+then 
+cp -r ${HOMEDIR}/gun/gun.cpp .
+cp -r ${HOMEDIR}/gun/CMakeLists.txt . 
+fi 
 
-# if [[ "${SAMPLE}" == "Zcard" ]]
-# then 
-#       cp ${HOMEDIR}/Pythia_generation/${SAMPLE}.cmd card.cmd
-#       echo "Random:seed=${SEED}" >> card.cmd
-#       cat card.cmd
-#       cp ${HOMEDIR}/Pythia_generation/pythia.py ./
-# fi
+if [[ "${SAMPLE}" == "Zcard" ]]
+then 
+      cp ${HOMEDIR}/Pythia_generation/${SAMPLE}.cmd card.cmd
+      echo "Random:seed=${SEED}" >> card.cmd
+      cat card.cmd
+      cp ${HOMEDIR}/Pythia_generation/pythia.py ./
+fi
 
-# ##
+##
 
 cp -r /afs/cern.ch/work/m/mgarciam/private/CLDConfig/CLDConfig/cld_steer.py .
 cp -r /afs/cern.ch/work/m/mgarciam/private/CLDConfig/CLDConfig/CLDReconstruction1.py .
@@ -46,28 +46,28 @@ wrapperfunction() {
 }
 wrapperfunction
 
-# if [[ "${SAMPLE}" == "gun" ]] 
-# then 
-# mkdir build install
-# cd build
-# cmake .. -DCMAKE_INSTALL_PREFIX=../install
-# make install -j 8
-# cd ..
-# ./build/gun ${GUNCARD} 
-# fi 
+if [[ "${SAMPLE}" == "gun" ]] 
+then 
+mkdir build install
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=../install
+make install -j 8
+cd ..
+./build/gun ${GUNCARD} 
+fi 
 
 
-# if [[ "${SAMPLE}" == "Zcard" ]]
-# then
-#       k4run pythia.py -n $NEV --Dumper.Filename out.hepmc --Pythia8.PythiaInterface.pythiacard card.cmd
-# fi
+if [[ "${SAMPLE}" == "Zcard" ]]
+then
+      k4run pythia.py -n $NEV --Dumper.Filename out.hepmc --Pythia8.PythiaInterface.pythiacard card.cmd
+fi
 
 
-# # Run simulation 
-# ddsim --compactFile $K4GEO/FCCee/CLD/compact/CLD_o2_v05/CLD_o2_v05.xml --outputFile out_sim_edm4hep.root --steeringFile cld_steer.py --inputFiles out.hepmc --numberOfEvents ${NEV} --random.seed ${SEED}
+# Run simulation 
+ddsim --compactFile $K4GEO/FCCee/CLD/compact/CLD_o2_v05/CLD_o2_v05.xml --outputFile out_sim_edm4hep.root --steeringFile cld_steer.py --inputFiles out.hepmc --numberOfEvents ${NEV} --random.seed ${SEED}
 
-# # Run reco 
-# k4run CLDReconstruction1.py -n ${NEV}  --inputFile out_sim_edm4hep.root --outputBasename out_reco_edm4hep
+# Run reco 
+k4run CLDReconstruction1.py -n ${NEV}  --inputFile out_sim_edm4hep.root --outputBasename out_reco_edm4hep
 
 # Create Tree 
 python make_pftree_clic_bindings_tautau.py out_reco_edm4hep_edm4hep.root tree2.root False False ${IDX}
