@@ -172,8 +172,12 @@ def find_mother_particle(j, gen_part_coll):
     parent_p = j
     counter = 0
     while len(np.reshape(np.array(parent_p), -1)) < 1.5:
+        # print("parent_p", parent_p)
         if type(parent_p) == list:
-            parent_p = parent_p[0]
+            if len(parent_p) > 0:
+                parent_p = parent_p[0]
+            else:
+                break
         parent_p_r = get_genparticle_parents(
             parent_p,
             gen_part_coll,
@@ -397,6 +401,7 @@ def gen_particles_find(event, debug):
                 total_e = total_e + p
         theta = math.acos(momentum.z / p)
         phi = math.atan2(momentum.y, momentum.x)
+        print(momentum.x, momentum.y, momentum.z)
         if debug:
             print(
                 "all genparts: N: {}, PID: {}, Q: {}, P: {:.2e}, Theta: {:.2e}, Phi: {:.2e}, M: {:.2e}, X(m): {:.3f}, Y(m): {:.3f}, R(m): {:.3f}, Z(m): {:.3f}, status: {}, parents: {}, daughters: {}, decayed_traacker: {}".format(
