@@ -129,15 +129,17 @@ def main():
     if training_mode:
         # wandb.init(project=args.wandb_projectname, entity=args.wandb_entity)
         # wandb.run.name = args.wandb_displayname
-        if args.load_model_weights is not None and args.correction:
-            from src.models.GATr.Gatr_pf_e import ExampleWrapper as GravnetModel
+        # if args.load_model_weights is not None and args.correction:
+        #     from src.models.GATr.Gatr_pf_e import ExampleWrapper as GravnetModel
 
-            model = GravnetModel.load_from_checkpoint(
-                args.load_model_weights, args=args, dev=0
+        #     model = GravnetModel.load_from_checkpoint(
+        #         args.load_model_weights, args=args, dev=0
+        #     )
+
+        if args.load_model_weights is not None:
+            from src.models.Gatr_pf_e_multiclass import (
+                ExampleWrapper as GravnetModel,
             )
-
-        elif args.load_model_weights is not None:
-            from src.models.GATr.Gatr_pf_e import ExampleWrapper as GravnetModel
 
             model = GravnetModel.load_from_checkpoint(
                 args.load_model_weights, args=args, dev=0
@@ -163,15 +165,14 @@ def main():
         trainer = L.Trainer(
             callbacks=callbacks,
             accelerator="gpu",
-            devices=args.gpus,
+            # devices=args.gpus,
+            devices=[1],
             default_root_dir=args.model_prefix,
             logger=wandb_logger,
-            # profiler=profiler,
             max_epochs=args.num_epochs,
-            # accumulate_grad_batches=1,
-            strategy="ddp",
-            # limit_train_batches=100,
-            limit_val_batches=100,
+            # strategy="ddp",
+            # limit_train_batches=200,
+            # limit_val_batches=20,
             # strategy="ddp_find_unused_parameters_true"
             # precision=16
             # resume_from_checkpoint=args.load_model_weig
@@ -191,8 +192,8 @@ def main():
         # TODO use accumulate_grad_batches=7
 
     if args.data_test:
-        if args.load_model_weights is not None and args.correction:
-            from src.models.GATr.Gatr_pf_e import ExampleWrapper as GravnetModel
+        if args.load_model_weights is not None:
+            from src.models.Gatr_pf_e_tau_rho import ExampleWrapper as GravnetModel
 
             model = GravnetModel.load_from_checkpoint(
                 args.load_model_weights, args=args, dev=0
@@ -202,7 +203,7 @@ def main():
             callbacks=[TQDMProgressBar(refresh_rate=1)],
             accelerator="gpu",
             # profiler=profiler,
-            devices=[1],
+            devices=[3],
             default_root_dir=args.model_prefix,
             logger=wandb_logger,
             # limit_val_batches=2,

@@ -22,12 +22,13 @@ def create_and_store_graph_output(
         # print(y1)
         label_i = labels_true[i]
         pred_i = model_output[i]
+        print(label_i != torch.argmax(pred_i.view(-1)))
         if label_i != torch.argmax(pred_i.view(-1)):
             str_label = int(label_i.detach().cpu().numpy())
             str_pred = int(torch.argmax(pred_i.view(-1)).detach().cpu().numpy())
             path = (
                 path_save
-                + "/graphs_all_comparing_root203/"
+                + "/graphs_all_comparing_root_t1/"
                 + str(str_label)
                 + "_"
                 + str(str_pred)

@@ -42,10 +42,13 @@ def to_filelist(args, mode="train"):
     # sort files
     for name, files in file_dict.items():
         file_dict[name] = sorted(files)
-
+    print("local rank", args.local_rank)
     if args.local_rank is not None:
         if mode == "train":
-            local_world_size = 4  # int(os.environ['LOCAL_WORLD_SIZE'])
+            if args.predict:
+                local_world_size = 1
+            else:
+                local_world_size = 1  # int(os.environ['LOCAL_WORLD_SIZE'])
             new_file_dict = {}
             for name, files in file_dict.items():
                 new_files = files[args.local_rank :: local_world_size]
@@ -244,7 +247,6 @@ def test_load(args):
         files = file_dict.pop(name)
         for i in range((len(files) + split - 1) // split):
             file_dict[f"{name}_{i}"] = files[i * split : (i + 1) * split]
-    print("file_dict", file_dict)
 
     def get_test_loader(name):
         filelist = file_dict[name]

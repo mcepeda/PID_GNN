@@ -1,6 +1,6 @@
 graph_config:
    only_hits: false
-   tau_sample: false
+   tau_sample: true
    k: 40
 
 custom_model_kwargs:
@@ -82,13 +82,14 @@ inputs:
          - [hit_type_nn, null] # used
          - [hit_e_nn, null] #1
          - [label_true, null] #1
+         - [tau_label, null] #1
    pf_vectoronly:
       length: 25000
       pad_mode: wrap
       vars:
       - [hit_genlink0, null] #used
       - [hit_genlink3, null] #used
-      # - [hit_genlink4, null] #2
+      - [hit_genlink4, null] #2
 
 
    pf_mask:

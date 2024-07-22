@@ -1,6 +1,7 @@
 graph_config:
    only_hits: false
-   tau_sample: false
+   tau_sample: true
+   prediction: true
    k: 40
 
 custom_model_kwargs:
@@ -74,6 +75,11 @@ inputs:
          - [part_p , null] # used
          - [part_m, null] # used
          - [part_pid, null] # used
+         - [part_isDecayedInCalorimeter, null]
+         - [part_isDecayedInTracker, null]
+         - [hit_pandora_cluster_energy, null]
+         - [hit_pandora_pfo_energy, null]
+         - [hit_chis, null]
 
    pf_vectors:
       length: 25000
@@ -82,13 +88,14 @@ inputs:
          - [hit_type_nn, null] # used
          - [hit_e_nn, null] #1
          - [label_true, null] #1
+         - [tau_label, null] #1
    pf_vectoronly:
       length: 25000
       pad_mode: wrap
       vars:
       - [hit_genlink0, null] #used
-      - [hit_genlink3, null] #used
-      # - [hit_genlink4, null] #2
+      - [hit_genlink1, null] #used
+      - [hit_genlink2, null] #2
 
 
    pf_mask:

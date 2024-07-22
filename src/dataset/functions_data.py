@@ -158,23 +158,35 @@ def scatter_count(input: torch.Tensor):
     return scatter_add(torch.ones_like(input, dtype=torch.long), input.long())
 
 
-def get_particle_features(unique_list_particles, output, prediction, connection_list):
+def get_particle_features(
+    unique_list_particles, output, prediction, connection_list, tau_sample=False
+):
     unique_list_particles = torch.Tensor(unique_list_particles).to(torch.int64)
     if prediction:
-        number_particle_features = 12 - 2
+        number_particle_features = 7 + 2
+        number_p = 7
     else:
         number_particle_features = 9 - 2
+        number_p = 5
     # unique_list_particles = torch.Tensor(unique_list_particles)
-    # features_particles = torch.permute(
-    #     torch.tensor(
-    #         output["pf_features"][2:number_particle_features, unique_list_particles]
-    #     ),
-    #     (1, 0),
-    # ).view(-1, 5)
-
-    features_particles = torch.tensor(
-        output["pf_features"][2:number_particle_features, 2]
-    ).view(-1, 5)
+    if tau_sample:
+        if len(unique_list_particles) > 1:
+            features_particles = torch.permute(
+                torch.tensor(
+                    output["pf_features"][
+                        2:number_particle_features, unique_list_particles
+                    ]
+                ),
+                (1, 0),
+            ).view(-1, number_p)
+        else:
+            features_particles = torch.tensor(
+                output["pf_features"][2:number_particle_features, unique_list_particles]
+            ).view(-1, number_p)
+    else:
+        features_particles = torch.tensor(
+            output["pf_features"][2:number_particle_features, 2]
+        ).view(-1, 5)
 
     # print("features_particles", features_particles.shape)
     particle_coord = spherical_to_cartesian(
@@ -187,6 +199,7 @@ def get_particle_features(unique_list_particles, output, prediction, connection_
     y_mom = features_particles[:, 2].view(-1).unsqueeze(1)
     y_energy = torch.sqrt(y_mass**2 + y_mom**2)
     y_pid = features_particles[:, 4].view(-1).unsqueeze(1)
+
     if prediction:
         y_data_graph = Particles_GT(
             particle_coord,
@@ -250,10 +263,12 @@ def modify_index_link_for_gamma_e(
     return hit_particle_link, hit_link_modified, connections_list
 
 
-def get_hit_features(output, number_hits, prediction, number_part, hit_chis):
+def get_hit_features(
+    output, number_hits, prediction, number_part, hit_chis, tau_sample
+):
     hit_particle_link = torch.tensor(output["pf_vectoronly"][0, 0:number_hits])
     if prediction:
-        indx_daugthers = 3
+        indx_daugthers = 1
     else:
         indx_daugthers = 1
     daughters = torch.tensor(output["pf_vectoronly"][indx_daugthers, 0:number_hits])
@@ -280,24 +295,32 @@ def get_hit_features(output, number_hits, prediction, number_part, hit_chis):
         pfo_energy = None
         chi_squared_tracks = None
     # hit type
+    
     hit_type_feature = torch.permute(
         torch.tensor(output["pf_vectors"][:, 0:number_hits]), (1, 0)
     )[:, 0].to(torch.int64)
     label_true = torch.permute(
         torch.tensor(output["pf_vectors"][:, 0:number_hits]), (1, 0)
     )[:, 2].to(torch.int64)
-
+    if tau_sample:
+        tau_label = torch.permute(
+            torch.tensor(output["pf_vectors"][:, 0:number_hits]), (1, 0)
+        )[:, 3].to(torch.int64)
+    else:
+        tau_label = label_true
+    # print(pandora_pfo_link[hit_type_feature==1])
     # (aa, aaa, aaaa,) = modify_index_link_for_gamma_e(
     #     hit_type_feature, hit_particle_link, daughters, output, number_part
     # )
     hit_link_modified = torch.ones_like(hit_particle_link)
     connection_list = None
     cluster_id, unique_list_particles = find_cluster_id(hit_particle_link)
-    unique_list_particles_ = torch.unique(daughters)
+    unique_list_particles_ = torch.unique(tau_label)
     unique_list_particles = []
     for i in range(0, len(unique_list_particles_)):
         if unique_list_particles_[i] != -1:
             unique_list_particles.append(int(unique_list_particles_[i].item()))
+
     # position, e, p
     pos_xyz_hits = torch.permute(
         torch.tensor(output["pf_points"][:3, 0:number_hits]), (1, 0)
@@ -331,6 +354,7 @@ def get_hit_features(output, number_hits, prediction, number_part, hit_chis):
         connection_list,
         chi_squared_tracks,
         label_true,
+        tau_label,
     )
 
 

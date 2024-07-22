@@ -1,7 +1,7 @@
 import torch
 
 # from src.models.gravnet_3_tracking import GravnetModel
-from src.models.Gatr_pf_e import ExampleWrapper as GravnetModel
+from src.models.Gatr_pf_e_tau_rho import ExampleWrapper as GravnetModel
 
 # from src.models.point_transformer.point_transformer import (
 #     PointTransformerOC as GravnetModel,

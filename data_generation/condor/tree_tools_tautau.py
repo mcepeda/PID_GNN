@@ -300,10 +300,10 @@ def initialize(t):
 
     ### store here the position of the corresponding gen particles associated to the hit in flat format (same info as above but easier to read)
     hit_genlink0 = ROOT.std.vector("int")()
-    hit_genlink1 = ROOT.std.vector("int")()
-    hit_genlink2 = ROOT.std.vector("int")()
-    hit_genlink3 = ROOT.std.vector("int")()
-    hit_genlink4 = ROOT.std.vector("int")()
+    hit_genlink1 = ROOT.std.vector("float")()
+    hit_genlink2 = ROOT.std.vector("float")()
+    hit_genlink3 = ROOT.std.vector("float")()
+    hit_genlink4 = ROOT.std.vector("float")()
 
     ## this is the fraction of the energy depoisited by that gen particle in this hit
     hit_genweight0 = ROOT.std.vector("float")()
@@ -685,7 +685,8 @@ def store_tracks(
                 pandora_pfos_event,
             )
             dic["hit_pandora_cluster_energy"].push_back(0)
-            dic["hit_pandora_pfo_energy"].push_back(pandora_pfo_energy)
+            dic["hit_pandora_pfo_energy"].push_back(pandora_index_pfo)
+            print(x, y, z, pandora_index_pfo, track_mom[0], chi_s)
 
         link_vector = ROOT.std.vector("int")()
         for idx in gen_indices:
@@ -785,7 +786,7 @@ def store_tracks(
         )  # linked to first particle by default now
         if store_pandora_hits == "True":
             dic["hit_pandora_cluster_energy"].push_back(0)
-            dic["hit_pandora_pfo_energy"].push_back(pandora_pfo_energy)
+            dic["hit_pandora_pfo_energy"].push_back(pandora_index_pfo)
 
         genlink = -1
         if ngen > 0:
@@ -800,6 +801,7 @@ def store_tracks(
                 dic["hit_genlink1"].push_back(gen_indices[1])
         if store_pandora_hits == "True":
             # print("storing calo hit")
+            # print("storing pandora pfo track", pandora_index_pfo)
             dic["hit_genlink2"].push_back(pandora_index_pfo)
         else:
             if len(gen_indices) > 2:
@@ -984,7 +986,7 @@ def store_calo_hits(
                     j, hit_collection, pandora_clusters_event, pandora_pfos_event
                 )
                 dic["hit_pandora_cluster_energy"].push_back(pandora_cluster_energy)
-                dic["hit_pandora_pfo_energy"].push_back(pfo_energy)
+                dic["hit_pandora_pfo_energy"].push_back(pandora_pfo_index)
 
             if len(gen_indices) > 0:
                 dic["hit_genlink0"].push_back(gen_indices[0])
@@ -996,6 +998,7 @@ def store_calo_hits(
                     dic["hit_genlink1"].push_back(0)
             if store_pandora_hits == "True":
                 # print("storing calo hit")
+                # print("storing pandora pfo", pandora_pfo_index)
                 dic["hit_genlink2"].push_back(pandora_pfo_index)
             else:
                 if len(gen_indices) > 2:
