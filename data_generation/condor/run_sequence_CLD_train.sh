@@ -38,8 +38,8 @@ cp -r ${HOMEDIR}/gun/${GUNCARD} .
 
 # Load key4hep 
 wrapperfunction() {
-    source /cvmfs/sw.hsf.org/key4hep/setup.sh
-#     source /cvmfs/sw-nightlies.hsf.org/key4hep/setup.sh -r 2024-03-07
+#     source /cvmfs/sw.hsf.org/key4hep/setup.sh
+    source /cvmfs/sw-nightlies.hsf.org/key4hep/setup.sh 
 }
 wrapperfunction
 
