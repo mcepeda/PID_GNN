@@ -8,7 +8,10 @@ OUTPUTDIR=${5}
 DIR=${6}
 IDX=${7}
 
-SAMPLE="Zcard" #main card
+#SAMPLE="Zcard" #main card
+SAMPLE="Zcard"
+#SAMPLECARD="ZcardPolPlus"
+SAMPLECARD="ZcardPolMinus"
 
 mkdir ${DIR}
 mkdir ${DIR}/${SEED}
@@ -23,7 +26,7 @@ fi
 
 if [[ "${SAMPLE}" == "Zcard" ]]
 then 
-      cp ${HOMEDIR}/Pythia_generation/${SAMPLE}.cmd card.cmd
+      cp ${HOMEDIR}/Pythia_generation/${SAMPLECARD}.cmd card.cmd
       echo "Random:seed=${SEED}" >> card.cmd
       cat card.cmd
       cp ${HOMEDIR}/Pythia_generation/pythia.py ./
@@ -31,7 +34,8 @@ fi
 
 ##
 
-cp -r /afs/cern.ch/work/m/mgarciam/private/CLDConfig_2207/CLDConfig/* .
+cp -r /afs/cern.ch/user/c/cepeda/public/TestsPythia/CLDFromDolores/* .
+#cp -r /afs/cern.ch/work/m/mgarciam/private/CLDConfig_2207/CLDConfig/* .
 cp -r ${HOMEDIR}/condor/make_pftree_clic_bindings_tautau.py .
 cp -r ${HOMEDIR}/condor/tree_tools_tautau.py .
 cp -r ${HOMEDIR}/gun/${GUNCARD} .

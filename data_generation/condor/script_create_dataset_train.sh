@@ -15,3 +15,15 @@
 
 python submit_jobs_train.py --config config_tau.gun --outdir /eos/experiment/fcc/ee/datasets/mlpf/CLD/train/Z_tautau_v8/ --condordir /eos/experiment/fcc/ee/datasets/mlpf/condor/train/Z_tautau_v6/ --idx 5 --njobs 3000 --nev 100 --queue workday
 
+python submit_jobs_train.py --config config_tau.gun --outdir /eos/user/c/cepeda/TauPolTests/ztautau_polM1 --condordir /eos/user/c/cepeda/TauPolTests/ztautau_polM1  --idx 5 --njobs 3 --nev 100 --queue workday 
+
+python submit_jobs_train.py --config config_tau.gun --outdir /eos/user/c/cepeda/TauPolTests/ztautau_test4 --condordir /eos/user/c/cepeda/TauPolTests/ztautau_condor_test4  --idx 5 --njobs 4 --nev 100 --queue workday 
+
+python submit_jobs_train.py --config config_tau.gun --outdir /eos/user/c/cepeda/TauPolTests/ztautau_testsPolM1 --condordir /eos/user/c/cepeda/TauPolTests/ztautau_condor_testsPolM1  --idx 5 --njobs 30 --nev 100 --queue workday
+
+python submit_jobs_train.py --config config_tau.gun --outdir /eos/user/c/cepeda/TauPolTests/ztautau_testsPolP1_7 --condordir /eos/user/c/cepeda/TauPolTests/ztautau_condor_testsPolP1_7  --idx 6 --njobs 30 --nev 100 --queue workday
+
+python submit_jobs_train.py --config config_tau.gun --outdir /eos/user/c/cepeda/TauPolTests/ztautau_PolP1_7 --condordir /eos/user/c/cepeda/TauPolTests/ztautau_condor_PolP1_7  --idx 6 --njobs 3000 --nev 100 --queue workday
+
+python submit_jobs_train.py --config config_tau.gun --outdir /eos/user/c/cepeda/TauPolTests/ztautau_PolM1_7 --condordir /eos/user/c/cepeda/TauPolTests/ztautau_condor_PolM1_7  --idx 6 --njobs 6000 --nev 100 --queue workday
+
